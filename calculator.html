@@ -1230,9 +1230,13 @@
         <img id="qr-code-img" src="assets/images/qrcode.jpg" alt="收款码" style="width:184px;height:184px;object-fit:contain;display:block;border-radius:4px;">
       </div>
       <p class="qr-scan-hint"><span class="dot"></span>请使用<span id="qr-payment-name"></span>扫码支付</p>
-      <div class="qr-btn-row">
+      <p style="font-size:12px;color:#8e8e93;margin-top:4px;text-align:center;">扫码支付后，输入解锁码</p>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" id="qr-unlock-input" placeholder="请输入解锁码" maxlength="6" style="flex:1;padding:12px;border-radius:12px;border:2px solid #e0e0e5;font-size:16px;text-align:center;font-family:inherit;letter-spacing:4px;outline:none;transition:border-color 0.2s;" autocomplete="off">
+      </div>
+      <p id="qr-unlock-error" style="font-size:11px;color:#ff3b30;margin-top:4px;text-align:center;display:none;">解锁码错误</p>
+      <div class="qr-btn-row" style="margin-top:12px;">
         <button class="qr-btn qr-btn-cancel" id="qr-btn-cancel">取消支付</button>
-        <button class="qr-btn qr-btn-confirm" id="qr-btn-confirm">已完成支付</button>
       </div>
     </div>
   </div>
@@ -1410,20 +1414,18 @@
     }
 
     function handleOperator(op) {
-      const current = parseFloat(state.currentValue);
-
       if (state.operator && !state.shouldResetDisplay) {
-        // Chain operations
+        // Pressed operator after entering a second number without =
+        // Treat the previous operator as implicit = first, then set new operator
+        const current = parseFloat(state.currentValue);
         const result = calculate(state.previousValue, current, state.operator);
-        state.currentValue = formatResult(result);
         state.previousValue = result;
-      } else {
-        state.previousValue = current;
+      } else if (!state.shouldResetDisplay) {
+        state.previousValue = parseFloat(state.currentValue);
       }
 
       state.operator = op;
       state.shouldResetDisplay = true;
-      updateDisplay();
       highlightOperator(op);
     }
 
@@ -1618,6 +1620,9 @@
 
       // Show modal
       document.getElementById('qr-modal-overlay').classList.add('show');
+      qrUnlockInput.value = '';
+      qrUnlockError.style.display = 'none';
+      setTimeout(() => qrUnlockInput.focus(), 400);
     });
 
     // ===== QR Code Generation =====
@@ -1726,27 +1731,47 @@
       showToast('支付已取消');
     });
 
-    document.getElementById('qr-btn-confirm').addEventListener('click', () => {
-      document.getElementById('qr-modal-overlay').classList.remove('show');
+    // ===== Unlock Code Verification =====
+    const UNLOCK_PASSWORD = '8888'; // ← 改成你自己的解锁码
 
-      const planName = subState.selectedPlan === 'monthly' ? '连续包月' : '连续包年';
-      const price = subState.selectedPlan === 'monthly' ? '¥40' : '¥360';
-      const expression = state.pendingExpression;
-      const result = state.pendingResult;
+    const qrUnlockInput = document.getElementById('qr-unlock-input');
+    const qrUnlockError = document.getElementById('qr-unlock-error');
 
-      // Clear pending state
-      state.pendingResult = null;
-      state.pendingExpression = '';
+    qrUnlockInput.addEventListener('input', () => {
+      qrUnlockError.style.display = 'none';
+      const code = qrUnlockInput.value.trim();
+      if (code.length >= 4) {
+        // Auto-submit when 4+ digits entered
+        if (code === UNLOCK_PASSWORD) {
+          // Correct password!
+          qrUnlockInput.value = '';
+          qrUnlockError.style.display = 'none';
+          document.getElementById('qr-modal-overlay').classList.remove('show');
 
-      showToast(`${planName} ${price} 支付成功！`, 'success');
+          const planName = subState.selectedPlan === 'monthly' ? '连续包月' : '连续包年';
+          const price = subState.selectedPlan === 'monthly' ? '¥40' : '¥360';
+          const expression = state.pendingExpression;
+          const result = state.pendingResult;
 
-      // Reveal the locked result
-      setTimeout(() => {
-        state.currentValue = result;
-        showCalculatorView();
-        updateDisplay();
-        showToast(`${expression} = ${result}`, 'success');
-      }, 800);
+          state.pendingResult = null;
+          state.pendingExpression = '';
+
+          showToast(`${planName} ${price} 支付成功！`, 'success');
+
+          setTimeout(() => {
+            state.currentValue = result;
+            showCalculatorView();
+            updateDisplay();
+            showToast(`${expression} = ${result}`, 'success');
+          }, 800);
+        } else if (code.length >= UNLOCK_PASSWORD.length) {
+          // Wrong password
+          qrUnlockInput.value = '';
+          qrUnlockError.style.display = 'block';
+          qrUnlockInput.style.borderColor = '#ff3b30';
+          setTimeout(() => { qrUnlockInput.style.borderColor = '#e0e0e5'; }, 600);
+        }
+      }
     });
 
     // ===== Toast =====
