@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "hello-world",
+    "title": "Hello World — 博客启航",
+    "date": "2026-05-24",
+    "category": "tech",
+    "excerpt": "这是我的第一篇博客文章。聊聊为什么要建这个博客，以及它用了哪些技术——原生 HTML/CSS/JS 打造的丝滑动画体验。",
+    "readingTime": 3
+  },
+  {
+    "slug": "smooth-animations",
+    "title": "纯 CSS + JS 实现丝滑动画的秘诀",
+    "date": "2026-05-20",
+    "category": "tech",
+    "excerpt": "不用任何动画库，只用原生 API 如何做出顶级流畅的网页动画？分享 IntersectionObserver、FLIP 技术和 CSS easing 的实战心得。",
+    "readingTime": 8
+  },
+  {
+    "slug": "life-first-post",
+    "title": "周末徒步小记 — 山间的光与影",
+    "date": "2026-05-15",
+    "category": "life",
+    "excerpt": "上周末去郊外走了走。五月的阳光穿过树叶，洒在山路上。随手拍了几张照片，记录一下这段安静时光。",
+    "readingTime": 4
+  }
+]

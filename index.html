@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Blog</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div id="progress-bar"></div>
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="/" class="nav-title" data-link>My Blog</a>
+      <div class="nav-tags">
+        <a href="/" class="nav-tag active" data-category="all" data-link>All</a>
+        <a href="/?category=tech" class="nav-tag" data-category="tech" data-link>Tech</a>
+        <a href="/?category=life" class="nav-tag" data-category="life" data-link>Life</a>
+        <a href="/?category=creative" class="nav-tag" data-category="creative" data-link>Creative</a>
+      </div>
+    </div>
+  </nav>
+  <main id="view"></main>
+  <footer id="footer">
+    <p>&copy; 2026 My Blog. Built with love.</p>
+  </footer>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

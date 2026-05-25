@@ -1,0 +1,1838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", "PingFang SC", sans-serif;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 400px;
+      height: 100vh;
+      max-height: 850px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ===== Calculator View ===== */
+    #calculator-view {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #1c1c1e;
+      padding: 20px 16px 32px;
+      transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+                  opacity 0.35s ease-out;
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    #calculator-view.hidden {
+      transform: translateX(-40px) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .display {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-end;
+      padding: 0 8px 16px;
+    }
+
+    .display-value {
+      font-size: 72px;
+      font-weight: 300;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      transition: font-size 0.15s ease;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .display-value.small {
+      font-size: 52px;
+    }
+
+    .display-value.xsmall {
+      font-size: 38px;
+    }
+
+    .hint-text {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 12px;
+      text-align: center;
+      width: 100%;
+      letter-spacing: 0.04em;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      padding: 0 2px;
+    }
+
+    .btn {
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: none;
+      font-size: 26px;
+      font-weight: 400;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.08s ease, filter 0.08s ease, background 0.12s ease;
+      position: relative;
+      overflow: hidden;
+      font-family: inherit;
+      max-width: 82px;
+      max-height: 82px;
+      justify-self: center;
+      width: 100%;
+    }
+
+    .btn:active {
+      transform: scale(0.93);
+    }
+
+    .btn-function {
+      background: #a5a5a5;
+      color: #1c1c1e;
+    }
+
+    .btn-function:active {
+      background: #d4d4d4;
+    }
+
+    .btn-operator {
+      background: #ff9500;
+      color: #fff;
+    }
+
+    .btn-operator:active {
+      background: #ffb84d;
+    }
+
+    .btn-operator.active {
+      background: #fff;
+      color: #ff9500;
+    }
+
+    .btn-number {
+      background: #333333;
+      color: #fff;
+    }
+
+    .btn-number:active {
+      background: #737373;
+    }
+
+    .btn-zero {
+      grid-column: span 2;
+      border-radius: 41px;
+      aspect-ratio: auto;
+      max-width: none;
+      padding: 0 26px;
+      justify-content: flex-start;
+      border-radius: 41px;
+    }
+
+    /* ===== Subscription View ===== */
+    #subscribe-view {
+      position: absolute;
+      inset: 0;
+      background: #f2f2f7;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      transition: transform 0.45s cubic-bezier(0.32, 0.72, 0, 1),
+                  opacity 0.35s ease-out;
+      transform: translateX(0);
+      opacity: 1;
+      padding: 0;
+    }
+
+    #subscribe-view.hidden {
+      transform: translateX(40px) scale(0.92);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .sub-header {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #f2f2f7;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: background 0.15s;
+      color: #1c1c1e;
+    }
+
+    .back-btn:active {
+      background: #e0e0e5;
+    }
+
+    .sub-body {
+      flex: 1;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .sub-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1c1c1e;
+      text-align: center;
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .sub-desc {
+      font-size: 14px;
+      color: #8e8e93;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    /* Plan Cards */
+    .plan-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .plan-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plan-card:active {
+      transform: scale(0.98);
+    }
+
+    .plan-card.selected {
+      border-color: #007aff;
+      background: #f0f7ff;
+    }
+
+    .plan-badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #007aff;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 0 14px 0 12px;
+      letter-spacing: 0.03em;
+    }
+
+    .plan-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .plan-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1c1c1e;
+    }
+
+    .plan-price {
+      font-size: 14px;
+      color: #8e8e93;
+    }
+
+    .plan-price strong {
+      font-size: 22px;
+      color: #1c1c1e;
+      font-weight: 700;
+    }
+
+    .plan-save {
+      font-size: 12px;
+      color: #ff3b30;
+      font-weight: 500;
+      background: #fff0f0;
+      padding: 4px 10px;
+      border-radius: 10px;
+    }
+
+    .plan-radio {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid #c7c7cc;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .plan-card.selected .plan-radio {
+      border-color: #007aff;
+      background: #007aff;
+    }
+
+    .plan-radio::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      transform: scale(0);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .plan-card.selected .plan-radio::after {
+      transform: scale(1);
+    }
+
+    /* Payment Methods */
+    .section-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: -8px;
+    }
+
+    .payment-options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .payment-option {
+      background: #fff;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+    }
+
+    .payment-option:active {
+      transform: scale(0.98);
+    }
+
+    .payment-option.selected {
+      border-color: #007aff;
+      background: #f0f7ff;
+    }
+
+    .payment-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .wechat-icon {
+      background: #07c160;
+      color: #fff;
+    }
+
+    .alipay-icon {
+      background: #1677ff;
+      color: #fff;
+    }
+
+    .payment-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: #1c1c1e;
+      flex: 1;
+    }
+
+    .payment-radio {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #c7c7cc;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .payment-option.selected .payment-radio {
+      border-color: #007aff;
+      background: #007aff;
+    }
+
+    .payment-radio::after {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      transform: scale(0);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .payment-option.selected .payment-radio::after {
+      transform: scale(1);
+    }
+
+    /* Agreement */
+    .agreement {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .checkbox-wrapper {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      margin-top: 1px;
+    }
+
+    .agreement-checkbox {
+      display: none;
+    }
+
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid #c7c7cc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .agreement-checkbox:checked + .checkmark {
+      background: #007aff;
+      border-color: #007aff;
+    }
+
+    .checkmark::after {
+      content: '';
+      width: 5px;
+      height: 9px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg) scale(0);
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      margin-top: -2px;
+    }
+
+    .agreement-checkbox:checked + .checkmark::after {
+      transform: rotate(45deg) scale(1);
+    }
+
+    .agreement-text {
+      font-size: 13px;
+      color: #8e8e93;
+      line-height: 1.5;
+    }
+
+    .agreement-link {
+      color: #007aff;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .agreement-link:active {
+      opacity: 0.6;
+    }
+
+    /* Subscribe Button */
+    .subscribe-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: 0.02em;
+      transition: background 0.2s, transform 0.1s, opacity 0.2s;
+      margin-top: auto;
+    }
+
+    .subscribe-btn.active {
+      background: linear-gradient(135deg, #ff9500, #ff6b35);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255, 107, 53, 0.25);
+    }
+
+    .subscribe-btn.active:active {
+      transform: scale(0.97);
+    }
+
+    .subscribe-btn.disabled {
+      background: #e0e0e5;
+      color: #aeaeb2;
+      cursor: not-allowed;
+    }
+
+    /* ===== Splash Ad ===== */
+    #splash-ad {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: linear-gradient(170deg, #1a0505 0%, #4a1a10 35%, #6b2a1a 70%, #3d0a05 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #splash-ad.hidden {
+      opacity: 0;
+      transform: scale(1.08);
+      pointer-events: none;
+    }
+
+    .splash-content {
+      display: none;
+    }
+
+    .splash-product-img {
+      width: calc(100% - 64px);
+      height: calc(100% - 200px);
+      object-fit: contain;
+      position: absolute;
+      inset: 0;
+      margin: auto;
+      border-radius: 20px;
+      animation: splash-zoom 5s ease-out forwards;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    @keyframes splash-zoom {
+      0% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    .splash-icon {
+      font-size: 72px;
+      margin-bottom: 20px;
+      animation: splash-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes splash-bounce {
+      0% { transform: scale(0); opacity: 0; }
+      60% { transform: scale(1.15); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .splash-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .splash-subtitle {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+
+    .splash-feature {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 6px;
+    }
+
+    .splash-feature .check {
+      color: #34c759;
+      font-size: 16px;
+    }
+
+    .splash-sponsor {
+      margin-top: 40px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.22);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .splash-skip {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+      z-index: 1;
+    }
+
+    .splash-skip:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .splash-countdown {
+      margin-top: 24px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 18px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== Banner Ad ===== */
+    .banner-ad {
+      margin: 0 16px 8px;
+      background: linear-gradient(135deg, #2a2a2e 0%, #1e1e22 100%);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: opacity 0.3s, height 0.3s, margin 0.3s, padding 0.3s;
+      min-height: 56px;
+    }
+
+    .banner-ad.dismissed {
+      opacity: 0;
+      height: 0;
+      min-height: 0;
+      margin: 0 16px;
+      padding: 0 14px;
+      overflow: hidden;
+      border-width: 0;
+    }
+
+    .banner-ad-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.3);
+      letter-spacing: 0.05em;
+      font-weight: 500;
+    }
+
+    .banner-ad-close {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+
+    .banner-ad-close:hover {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .banner-ad-icon-svg {
+      width: 36px;
+      height: 48px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .banner-ad-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .banner-ad-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .banner-ad-desc {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-top: 2px;
+    }
+
+    .banner-ad-cta {
+      padding: 6px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #00a86b, #2ecc71);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+      transition: transform 0.1s;
+    }
+
+    .banner-ad-cta:active {
+      transform: scale(0.95);
+    }
+
+    /* ===== QR Code Modal ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .qr-modal {
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px 28px 24px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transform: translateY(20px) scale(0.94);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.show .qr-modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .qr-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1c1c1e;
+      margin-bottom: 6px;
+    }
+
+    .qr-amount {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1c1c1e;
+      margin-bottom: 20px;
+    }
+
+    .qr-amount span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #8e8e93;
+    }
+
+    .qr-canvas-wrapper {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 16px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f5f5f5;
+      padding: 8px;
+    }
+
+    .qr-canvas-wrapper canvas {
+      display: block;
+      border-radius: 4px;
+    }
+
+    .qr-logo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      font-size: 22px;
+    }
+
+    .qr-scan-hint {
+      font-size: 13px;
+      color: #8e8e93;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .qr-scan-hint .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34c759;
+      animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.6); }
+    }
+
+    .qr-btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .qr-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .qr-btn:active {
+      transform: scale(0.96);
+    }
+
+    .qr-btn-cancel {
+      background: #f2f2f7;
+      color: #8e8e93;
+    }
+
+    .qr-btn-cancel:active {
+      background: #e0e0e5;
+    }
+
+    .qr-btn-confirm {
+      background: #34c759;
+      color: #fff;
+    }
+
+    .qr-btn-confirm:active {
+      background: #2db84e;
+    }
+
+    /* ===== Terms Modal ===== */
+    .terms-modal {
+      background: #fff;
+      border-radius: 20px;
+      width: 340px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transform: translateY(20px) scale(0.94);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.show .terms-modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .terms-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-shrink: 0;
+    }
+
+    .terms-header h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+
+    .terms-close {
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .terms-body {
+      padding: 16px 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #3a3a3c;
+    }
+
+    .terms-body h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1c1c1e;
+      margin: 18px 0 8px;
+    }
+
+    .terms-body h3:first-of-type {
+      margin-top: 0;
+    }
+
+    .terms-body p {
+      margin-bottom: 6px;
+    }
+
+    .terms-body strong {
+      color: #1c1c1e;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: #1c1c1e;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 999;
+      font-family: inherit;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success {
+      background: #34c759;
+    }
+
+    /* Responsive */
+    @media (min-width: 500px) {
+      .app-container {
+        border-radius: 40px;
+        margin: 20px;
+        height: calc(100vh - 40px);
+      }
+
+      #calculator-view {
+        border-radius: 40px;
+      }
+
+      #subscribe-view {
+        border-radius: 40px;
+      }
+    }
+
+    @media (max-width: 374px) {
+      .btn {
+        font-size: 22px;
+      }
+
+      .display-value {
+        font-size: 56px;
+      }
+
+      .display-value.small {
+        font-size: 40px;
+      }
+
+      .display-value.xsmall {
+        font-size: 30px;
+      }
+
+      .buttons {
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Splash Ad -->
+  <div id="splash-ad">
+    <button class="splash-skip" id="splash-skip">跳过 5s</button>
+    <img class="splash-product-img" src="https://picb0.photophoto.cn/26/937/26937760_1.jpg" alt="巧乐兹">
+    <div class="splash-countdown" id="splash-countdown">5</div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- ===== Calculator View ===== -->
+    <div id="calculator-view">
+      <div class="display">
+        <div class="display-value" id="display">0</div>
+      </div>
+
+      <!-- Banner Ad -->
+      <div class="banner-ad" id="banner-ad">
+        <span class="banner-ad-badge">AD</span>
+        <button class="banner-ad-close" id="banner-ad-close" title="关闭">✕</button>
+        <!-- 雪碧罐子 SVG -->
+        <svg class="banner-ad-icon-svg" viewBox="0 0 40 56" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="sprite-body" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#00a651"/>
+              <stop offset="30%" stop-color="#2ecc71"/>
+              <stop offset="60%" stop-color="#00c853"/>
+              <stop offset="100%" stop-color="#009444"/>
+            </linearGradient>
+            <linearGradient id="sprite-shine" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+              <stop offset="35%" stop-color="rgba(255,255,255,0.3)"/>
+              <stop offset="45%" stop-color="rgba(255,255,255,0.15)"/>
+              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+            </linearGradient>
+          </defs>
+          <!-- Can body -->
+          <rect x="8" y="10" width="24" height="44" rx="6" fill="url(#sprite-body)"/>
+          <!-- Shine -->
+          <rect x="8" y="10" width="24" height="44" rx="6" fill="url(#sprite-shine)"/>
+          <!-- Top rim -->
+          <ellipse cx="20" cy="10" rx="12" ry="4" fill="#ccc"/>
+          <ellipse cx="20" cy="10" rx="10" ry="3" fill="#e8e8e8"/>
+          <!-- Bottom rim -->
+          <ellipse cx="20" cy="54" rx="12" ry="4" fill="#007a3d"/>
+          <!-- Sprite text -->
+          <text x="20" y="36" text-anchor="middle" font-size="13" font-weight="900" fill="#fff" font-family="Arial, sans-serif" letter-spacing="0.5">雪碧</text>
+          <!-- Bubbles -->
+          <circle cx="14" cy="18" r="1.5" fill="white" opacity="0.4"/>
+          <circle cx="25" cy="22" r="1" fill="white" opacity="0.3"/>
+          <circle cx="16" cy="28" r="1.2" fill="white" opacity="0.35"/>
+          <circle cx="25" cy="42" r="1.3" fill="white" opacity="0.25"/>
+        </svg>
+        <div class="banner-ad-text">
+          <div class="banner-ad-title">雪碧 — 透心凉，心飞扬</div>
+          <div class="banner-ad-desc">全新无糖配方，清爽一夏</div>
+        </div>
+        <a class="banner-ad-cta" href="https://www.coca-cola.com" target="_blank">尝鲜</a>
+      </div>
+
+      <div class="buttons">
+        <button class="btn btn-function" data-action="clear">AC</button>
+        <button class="btn btn-function" data-action="negate">±</button>
+        <button class="btn btn-function" data-action="percent">%</button>
+        <button class="btn btn-operator" data-action="operator" data-value="÷">÷</button>
+
+        <button class="btn btn-number" data-action="number" data-value="7">7</button>
+        <button class="btn btn-number" data-action="number" data-value="8">8</button>
+        <button class="btn btn-number" data-action="number" data-value="9">9</button>
+        <button class="btn btn-operator" data-action="operator" data-value="×">×</button>
+
+        <button class="btn btn-number" data-action="number" data-value="4">4</button>
+        <button class="btn btn-number" data-action="number" data-value="5">5</button>
+        <button class="btn btn-number" data-action="number" data-value="6">6</button>
+        <button class="btn btn-operator" data-action="operator" data-value="−">−</button>
+
+        <button class="btn btn-number" data-action="number" data-value="1">1</button>
+        <button class="btn btn-number" data-action="number" data-value="2">2</button>
+        <button class="btn btn-number" data-action="number" data-value="3">3</button>
+        <button class="btn btn-operator" data-action="operator" data-value="+">+</button>
+
+        <button class="btn btn-number btn-zero" data-action="number" data-value="0">0</button>
+        <button class="btn btn-number" data-action="decimal" data-value=".">.</button>
+        <button class="btn btn-operator" data-action="equals">=</button>
+      </div>
+      <p class="hint-text">点击 = 解锁高级功能</p>
+    </div>
+
+    <!-- ===== Subscription View ===== -->
+    <div id="subscribe-view" class="hidden">
+      <div class="sub-header">
+        <button class="back-btn" id="back-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M11 3L5 9L11 15" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="sub-body">
+        <h2 class="sub-title">解锁高级功能</h2>
+        <p class="sub-desc">畅享无限计算，解锁专属高级特性</p>
+
+        <div class="plan-cards">
+          <div class="plan-card selected" data-plan="monthly" id="plan-monthly">
+            <div class="plan-info">
+              <span class="plan-name">连续包月</span>
+              <span class="plan-price"><strong>¥40</strong> /月</span>
+            </div>
+            <div class="plan-radio"></div>
+          </div>
+
+          <div class="plan-card" data-plan="yearly" id="plan-yearly">
+            <span class="plan-badge">推荐</span>
+            <div class="plan-info">
+              <span class="plan-name">连续包年</span>
+              <span class="plan-price"><strong>¥360</strong> /年</span>
+            </div>
+            <span class="plan-save">省 ¥120</span>
+            <div class="plan-radio"></div>
+          </div>
+        </div>
+
+        <span class="section-label">支付方式</span>
+        <div class="payment-options">
+          <div class="payment-option selected" data-payment="wechat" id="pay-wechat">
+            <div class="payment-icon wechat-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 01.213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 00.167-.054l1.903-1.114a.864.864 0 01.717-.098 10.16 10.16 0 002.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178A1.17 1.17 0 014.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 01-1.162 1.178 1.17 1.17 0 01-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.742 2.042 2.439 3.316 4.323 3.8.322.082.652.123.985.123.8 0 1.587-.18 2.296-.517a.73.73 0 01.605-.08l1.76 1.03c.05.028.099.047.147.047.137 0 .245-.11.245-.247 0-.056-.02-.109-.04-.159l-.334-1.275a.496.496 0 01.177-.556C21.614 17.343 23 15.652 23 13.7c0-3.045-2.754-4.842-6.062-4.842zm-1.527 2.572c.488 0 .884.402.884.898a.891.891 0 01-.884.896.891.891 0 01-.884-.896c0-.496.396-.898.884-.898zm4.23 0c.488 0 .884.402.884.898a.891.891 0 01-.884.896.891.891 0 01-.884-.896c0-.496.396-.898.884-.898z"/>
+              </svg>
+            </div>
+            <span class="payment-name">微信支付</span>
+            <div class="payment-radio"></div>
+          </div>
+
+          <div class="payment-option" data-payment="alipay" id="pay-alipay">
+            <div class="payment-icon alipay-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm3.5 14.5h-2v-3h-3v3h-2v-7h2v2h3v-2h2v7zm-7-8.5h7v2h-7V8z"/>
+              </svg>
+            </div>
+            <span class="payment-name">支付宝</span>
+            <div class="payment-radio"></div>
+          </div>
+        </div>
+
+        <div class="agreement">
+          <div class="checkbox-wrapper">
+            <input type="checkbox" id="agreement-checkbox" class="agreement-checkbox">
+            <label for="agreement-checkbox" class="checkmark"></label>
+          </div>
+          <span class="agreement-text">
+            已阅读并同意
+            <a class="agreement-link" href="#" id="terms-link">《会员自动续费服务协议》</a>
+          </span>
+        </div>
+
+        <button class="subscribe-btn disabled" id="subscribe-btn">立即开通</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- QR Code Modal -->
+  <div class="modal-overlay" id="qr-modal-overlay">
+    <div class="qr-modal">
+      <p class="qr-title">扫码支付</p>
+      <p class="qr-amount" id="qr-amount"></p>
+      <div class="qr-canvas-wrapper">
+        <img id="qr-code-img" src="assets/images/qrcode.jpg" alt="收款码" style="width:184px;height:184px;object-fit:contain;display:block;border-radius:4px;">
+      </div>
+      <p class="qr-scan-hint"><span class="dot"></span>请使用<span id="qr-payment-name"></span>扫码支付</p>
+      <div class="qr-btn-row">
+        <button class="qr-btn qr-btn-cancel" id="qr-btn-cancel">取消支付</button>
+        <button class="qr-btn qr-btn-confirm" id="qr-btn-confirm">已完成支付</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms Modal -->
+  <div class="modal-overlay" id="terms-modal-overlay">
+    <div class="terms-modal">
+      <div class="terms-header">
+        <h2>会员自动续费服务协议</h2>
+        <button class="terms-close" id="terms-btn-close">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="10" fill="rgba(0,0,0,0.06)"/>
+            <path d="M7 7L13 13M13 7L7 13" stroke="#8e8e93" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="terms-body">
+        <p><strong>生效日期：</strong>2026年5月24日</p>
+        <p><strong>更新日期：</strong>2026年5月24日</p>
+
+        <h3>一、服务内容</h3>
+        <p>1.1 本服务为Pro Calc+会员自动续费服务（以下简称"本服务"），您在开通本服务后，可在服务有效期内享受Pro Calc+会员专属权益。</p>
+        <p>1.2 会员权益包括但不限于：无限次数高级运算、历史记录云端同步、AI公式智能推导、去广告体验等。</p>
+
+        <h3>二、自动续费机制</h3>
+        <p>2.1 本服务为自动续费服务。您在开通时选择的计费周期（包月或包年）到期后，系统将自动从您选择的支付方式中扣除下一周期的费用。</p>
+        <p>2.2 <strong>连续包月：</strong>每月自动续费¥40，续费日期为开通日期的对应日。</p>
+        <p>2.3 <strong>连续包年：</strong>每年自动续费¥360，续费日期为开通日期的对应日。</p>
+
+        <h3>三、取消方式</h3>
+        <p>3.1 您可随时在"我的-会员中心-管理自动续费"中关闭自动续费功能。</p>
+        <p>3.2 关闭自动续费后，当前已付费周期内会员权益仍然有效，到期后不再自动续费。</p>
+        <p>3.3 已支付的费用不支持退款。如您在使用过程中遇到问题，可联系客服处理。</p>
+
+        <h3>四、费用说明</h3>
+        <p>4.1 连续包月：¥40/月（含税）。</p>
+        <p>4.2 连续包年：¥360/年（含税），较包月节省¥120。</p>
+        <p>4.3 价格可能因促销活动调整，以开通时页面显示为准。价格调整不影响已开通服务的用户，直至下一个续费周期。</p>
+
+        <h3>五、服务变更与终止</h3>
+        <p>5.1 Pro Calc+有权根据业务需要调整会员权益内容，但会提前7个自然日通过应用内通知或短信方式告知。</p>
+        <p>5.2 如因不可抗力导致服务无法继续提供，Pro Calc+将按剩余服务时长比例退还费用。</p>
+
+        <h3>六、免责声明</h3>
+        <p>6.1 本服务按"现状"提供，Pro Calc+不对服务的可用性、及时性、完整性做任何明示或默示的保证。</p>
+        <p>6.2 因用户自身原因（如支付账户余额不足、支付方式失效等）导致的续费失败，Pro Calc+不承担责任，会员权益将在当前周期结束后自动终止。</p>
+
+        <h3>七、其他</h3>
+        <p>7.1 本协议的解释、效力及纠纷解决，适用中华人民共和国法律。</p>
+        <p>7.2 如本协议任何条款被认定为无效或不可执行，不影响其余条款的效力。</p>
+        <p>7.3 Pro Calc+保留对本协议的最终解释权。</p>
+        <br>
+        <p style="text-align:right;color:#8e8e93;"><strong>Pro Calc+ 团队</strong></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ===== Calculator State =====
+    const state = {
+      currentValue: '0',
+      previousValue: null,
+      operator: null,
+      shouldResetDisplay: false,
+      pendingResult: null,       // result locked behind payment
+      pendingExpression: '',     // e.g. "8 + 2"
+    };
+
+    // ===== Subscription State =====
+    const subState = {
+      selectedPlan: 'monthly',
+      selectedPayment: 'wechat',
+      agreedToTerms: false,
+    };
+
+    // ===== DOM Elements =====
+    const display = document.getElementById('display');
+    const calculatorView = document.getElementById('calculator-view');
+    const subscribeView = document.getElementById('subscribe-view');
+    const toast = document.getElementById('toast');
+    const subscribeBtn = document.getElementById('subscribe-btn');
+    const agreementCheckbox = document.getElementById('agreement-checkbox');
+
+    // ===== Update Display =====
+    function updateDisplay() {
+      let text = state.currentValue;
+
+      // Format number with commas
+      if (text !== 'Error' && text !== 'NaN' && text !== 'Infinity') {
+        const parts = text.split('.');
+        if (parts[0].length > 1 || parts[0] !== '-') {
+          const num = parseFloat(parts[0]);
+          if (!isNaN(num)) {
+            parts[0] = num.toLocaleString('en-US', { maximumFractionDigits: 0 });
+          }
+        }
+        text = parts.join('.');
+      }
+
+      display.textContent = text;
+
+      // Adjust font size based on length
+      display.classList.remove('small', 'xsmall');
+      if (text.length > 9) {
+        display.classList.add('xsmall');
+      } else if (text.length > 7) {
+        display.classList.add('small');
+      }
+    }
+
+    // ===== Calculator Logic =====
+    function inputNumber(num) {
+      if (state.shouldResetDisplay) {
+        state.currentValue = num;
+        state.shouldResetDisplay = false;
+      } else {
+        if (state.currentValue === '0' && num !== '0') {
+          state.currentValue = num;
+        } else if (state.currentValue === '0' && num === '0') {
+          // keep it '0'
+        } else {
+          if (state.currentValue.replace(/[^0-9]/g, '').length >= 12) return;
+          state.currentValue += num;
+        }
+      }
+      updateDisplay();
+      clearOperatorHighlight();
+    }
+
+    function inputDecimal() {
+      if (state.shouldResetDisplay) {
+        state.currentValue = '0.';
+        state.shouldResetDisplay = false;
+      } else {
+        if (!state.currentValue.includes('.')) {
+          state.currentValue += '.';
+        }
+      }
+      updateDisplay();
+    }
+
+    function clearAll() {
+      state.currentValue = '0';
+      state.previousValue = null;
+      state.operator = null;
+      state.shouldResetDisplay = false;
+      updateDisplay();
+      clearOperatorHighlight();
+    }
+
+    function negate() {
+      if (state.currentValue === '0') return;
+      if (state.currentValue.startsWith('-')) {
+        state.currentValue = state.currentValue.slice(1);
+      } else {
+        state.currentValue = '-' + state.currentValue;
+      }
+      updateDisplay();
+    }
+
+    function percent() {
+      const num = parseFloat(state.currentValue);
+      if (isNaN(num)) return;
+      state.currentValue = String(num / 100);
+
+      // Limit decimal places
+      if (state.currentValue.includes('.') && state.currentValue.split('.')[1].length > 8) {
+        state.currentValue = String(Math.round(num / 100 * 1e8) / 1e8);
+      }
+
+      updateDisplay();
+    }
+
+    function handleOperator(op) {
+      const current = parseFloat(state.currentValue);
+
+      if (state.operator && !state.shouldResetDisplay) {
+        // Chain operations
+        const result = calculate(state.previousValue, current, state.operator);
+        state.currentValue = formatResult(result);
+        state.previousValue = result;
+      } else {
+        state.previousValue = current;
+      }
+
+      state.operator = op;
+      state.shouldResetDisplay = true;
+      updateDisplay();
+      highlightOperator(op);
+    }
+
+    function handleEquals() {
+      if (state.operator === null) return;
+
+      const current = parseFloat(state.currentValue);
+      const result = calculate(state.previousValue, current, state.operator);
+
+      // Lock result behind payment
+      state.pendingResult = formatResult(result);
+      state.pendingExpression = `${formatDisplayValue(state.previousValue)} ${state.operator} ${formatDisplayValue(current)}`;
+      state.previousValue = null;
+      state.operator = null;
+      state.shouldResetDisplay = true;
+
+      // Show locked indicator on display
+      state.currentValue = '\u{1F512} = ?';
+      updateDisplay();
+      clearOperatorHighlight();
+
+      // Transition to subscription page
+      setTimeout(() => showSubscribeView(), 500);
+    }
+
+    function formatDisplayValue(val) {
+      const s = String(val);
+      if (s.includes('.') && s.split('.')[1].length > 6) {
+        return parseFloat(val).toPrecision(8);
+      }
+      return s;
+    }
+
+    function calculate(a, b, op) {
+      switch (op) {
+        case '+': return a + b;
+        case '−': return a - b;
+        case '×': return a * b;
+        case '÷': return b === 0 ? NaN : a / b;
+        default: return b;
+      }
+    }
+
+    function formatResult(num) {
+      if (isNaN(num)) return 'Error';
+      if (!isFinite(num)) return 'Error';
+
+      // Limit precision
+      const str = String(num);
+      if (str.includes('.') && str.split('.')[1].length > 10) {
+        return String(parseFloat(num.toPrecision(10)));
+      }
+      return String(num);
+    }
+
+    // ===== Operator Highlight =====
+    function highlightOperator(op) {
+      clearOperatorHighlight();
+      const btns = document.querySelectorAll('[data-action="operator"]');
+      btns.forEach((btn) => {
+        if (btn.dataset.value === op) {
+          btn.classList.add('active');
+        }
+      });
+    }
+
+    function clearOperatorHighlight() {
+      document.querySelectorAll('.btn-operator.active').forEach((btn) => {
+        btn.classList.remove('active');
+      });
+    }
+
+    // ===== Button Click Handler =====
+    document.querySelector('.buttons').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+
+      switch (action) {
+        case 'number':
+          inputNumber(btn.dataset.value);
+          break;
+        case 'decimal':
+          inputDecimal();
+          break;
+        case 'clear':
+          clearAll();
+          break;
+        case 'negate':
+          negate();
+          break;
+        case 'percent':
+          percent();
+          break;
+        case 'operator':
+          handleOperator(btn.dataset.value);
+          break;
+        case 'equals':
+          handleEquals();
+          break;
+      }
+    });
+
+    // ===== Keyboard Support =====
+    document.addEventListener('keydown', (e) => {
+      if (subscribeView.classList.contains('hidden')) {
+        if (e.key >= '0' && e.key <= '9') inputNumber(e.key);
+        else if (e.key === '.') inputDecimal();
+        else if (e.key === 'Escape') clearAll();
+        else if (e.key === '%') percent();
+        else if (e.key === '+') handleOperator('+');
+        else if (e.key === '-') handleOperator('−');
+        else if (e.key === '*') handleOperator('×');
+        else if (e.key === '/') { e.preventDefault(); handleOperator('÷'); }
+        else if (e.key === 'Enter' || e.key === '=') handleEquals();
+        else if (e.key === 'Backspace') {
+          if (state.currentValue.length > 1 && !state.shouldResetDisplay) {
+            state.currentValue = state.currentValue.slice(0, -1);
+          } else {
+            state.currentValue = '0';
+            state.shouldResetDisplay = false;
+          }
+          updateDisplay();
+        }
+      }
+    });
+
+    // ===== View Transitions =====
+    function showSubscribeView() {
+      calculatorView.classList.add('hidden');
+      subscribeView.classList.remove('hidden');
+    }
+
+    function showCalculatorView() {
+      subscribeView.classList.add('hidden');
+      calculatorView.classList.remove('hidden');
+    }
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      showCalculatorView();
+    });
+
+    // ===== Plan Selection =====
+    document.querySelectorAll('.plan-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.plan-card').forEach((c) => c.classList.remove('selected'));
+        card.classList.add('selected');
+        subState.selectedPlan = card.dataset.plan;
+      });
+    });
+
+    // ===== Payment Selection =====
+    document.querySelectorAll('.payment-option').forEach((option) => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.payment-option').forEach((o) => o.classList.remove('selected'));
+        option.classList.add('selected');
+        subState.selectedPayment = option.dataset.payment;
+      });
+    });
+
+    // ===== Agreement Toggle =====
+    agreementCheckbox.addEventListener('change', () => {
+      subState.agreedToTerms = agreementCheckbox.checked;
+      updateSubscribeButton();
+    });
+
+    // ===== Subscribe Button =====
+    function updateSubscribeButton() {
+      if (subState.agreedToTerms) {
+        subscribeBtn.classList.remove('disabled');
+        subscribeBtn.classList.add('active');
+      } else {
+        subscribeBtn.classList.remove('active');
+        subscribeBtn.classList.add('disabled');
+      }
+    }
+
+    subscribeBtn.addEventListener('click', () => {
+      if (!subState.agreedToTerms) {
+        showToast('请先阅读并同意会员自动续费服务协议');
+        return;
+      }
+
+      const price = subState.selectedPlan === 'monthly' ? 40 : 360;
+      const planLabel = subState.selectedPlan === 'monthly' ? '连续包月' : '连续包年';
+      const paymentLabel = subState.selectedPayment === 'wechat' ? '微信支付' : '支付宝';
+
+      // Set modal content
+      document.getElementById('qr-amount').innerHTML = `¥${price} <span>/ ${subState.selectedPlan === 'monthly' ? '月' : '年'}</span>`;
+      document.getElementById('qr-payment-name').textContent = paymentLabel;
+
+      // Show modal
+      document.getElementById('qr-modal-overlay').classList.add('show');
+    });
+
+    // ===== QR Code Generation =====
+    function generateQRCode() {
+      const canvas = document.getElementById('qr-canvas');
+      const ctx = canvas.getContext('2d');
+      const size = 184;
+      const modules = 23; // QR code version 1 is 21x21, use 23 for padding
+      const moduleSize = size / modules;
+
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+
+      // Generate random seed based on timestamp
+      const seed = Date.now() % 100000;
+
+      // Draw random QR-like modules
+      for (let row = 0; row < modules; row++) {
+        for (let col = 0; col < modules; col++) {
+          // Skip position detection patterns (7x7 squares in 3 corners)
+          if (isFinderPattern(row, col, modules)) continue;
+
+          // Skip timing pattern area (row 6 or col 6)
+          if (row === 6 || col === 6) {
+            // Timing pattern: alternating black/white
+            if ((row === 6 && col % 2 === 0) || (col === 6 && row % 2 === 0)) {
+              if (pseudoRandom(row, col, seed) > 0.3) {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+              }
+            }
+            continue;
+          }
+
+          // Fill data area with pseudo-random modules
+          const rand = pseudoRandom(row, col, seed);
+          if (rand > 0.55) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+          }
+        }
+      }
+
+      // Draw finder patterns (7x7 squares in top-left, top-right, bottom-left)
+      drawFinderPattern(ctx, 0, 0, moduleSize);
+      drawFinderPattern(ctx, 0, modules - 7, moduleSize);
+      drawFinderPattern(ctx, modules - 7, 0, moduleSize);
+
+      // Alignment pattern near bottom-right
+      drawAlignmentPattern(ctx, modules - 9, modules - 9, moduleSize);
+    }
+
+    function isFinderPattern(row, col, modules) {
+      // Top-left 8x8
+      if (row < 8 && col < 8) return true;
+      // Top-right 8x8
+      if (row < 8 && col >= modules - 8) return true;
+      // Bottom-left 8x8
+      if (row >= modules - 8 && col < 8) return true;
+      return false;
+    }
+
+    function drawFinderPattern(ctx, startRow, startCol, ms) {
+      const x = startCol * ms;
+      const y = startRow * ms;
+
+      // Outer black square (7x7)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, y, ms * 7, ms * 7);
+
+      // White ring (5x5)
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x + ms, y + ms, ms * 5, ms * 5);
+
+      // Inner black square (3x3)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x + ms * 2, y + ms * 2, ms * 3, ms * 3);
+    }
+
+    function drawAlignmentPattern(ctx, startRow, startCol, ms) {
+      const x = startCol * ms;
+      const y = startRow * ms;
+
+      // Outer black square (5x5)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x, y, ms * 5, ms * 5);
+
+      // White ring (3x3)
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x + ms, y + ms, ms * 3, ms * 3);
+
+      // Inner black dot (1x1)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x + ms * 2, y + ms * 2, ms, ms);
+    }
+
+    function pseudoRandom(row, col, seed) {
+      const x = Math.sin(row * 12.9898 + col * 78.233 + seed * 0.001) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    // ===== QR Modal Handlers =====
+    document.getElementById('qr-btn-cancel').addEventListener('click', () => {
+      document.getElementById('qr-modal-overlay').classList.remove('show');
+      showToast('支付已取消');
+    });
+
+    document.getElementById('qr-btn-confirm').addEventListener('click', () => {
+      document.getElementById('qr-modal-overlay').classList.remove('show');
+
+      const planName = subState.selectedPlan === 'monthly' ? '连续包月' : '连续包年';
+      const price = subState.selectedPlan === 'monthly' ? '¥40' : '¥360';
+      const expression = state.pendingExpression;
+      const result = state.pendingResult;
+
+      // Clear pending state
+      state.pendingResult = null;
+      state.pendingExpression = '';
+
+      showToast(`${planName} ${price} 支付成功！`, 'success');
+
+      // Reveal the locked result
+      setTimeout(() => {
+        state.currentValue = result;
+        showCalculatorView();
+        updateDisplay();
+        showToast(`${expression} = ${result}`, 'success');
+      }, 800);
+    });
+
+    // ===== Toast =====
+    let toastTimer = null;
+
+    function showToast(message, type = '') {
+      if (toastTimer) clearTimeout(toastTimer);
+
+      toast.textContent = message;
+      toast.className = 'toast ' + type;
+      // Force reflow
+      toast.offsetHeight;
+      toast.classList.add('show');
+
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+        toastTimer = null;
+      }, 2000);
+    }
+
+    // ===== Terms Link =====
+    document.getElementById('terms-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('terms-modal-overlay').classList.add('show');
+    });
+
+    document.getElementById('terms-btn-close').addEventListener('click', () => {
+      document.getElementById('terms-modal-overlay').classList.remove('show');
+    });
+
+    document.getElementById('terms-modal-overlay').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        e.target.classList.remove('show');
+      }
+    });
+
+    // ===== Splash Ad =====
+    const splashAd = document.getElementById('splash-ad');
+    const splashSkipBtn = document.getElementById('splash-skip');
+    const splashCountdown = document.getElementById('splash-countdown');
+    let splashSeconds = 5;
+    let splashTimer = null;
+
+    function dismissSplash() {
+      if (splashTimer) {
+        clearInterval(splashTimer);
+        splashTimer = null;
+      }
+      splashAd.classList.add('hidden');
+      // Remove from DOM after animation
+      setTimeout(() => {
+        if (splashAd.parentNode) {
+          splashAd.remove();
+        }
+      }, 500);
+    }
+
+    function updateSplashCountdown() {
+      splashSeconds--;
+      splashCountdown.textContent = splashSeconds;
+      splashSkipBtn.textContent = `跳过 ${splashSeconds}s`;
+
+      if (splashSeconds <= 0) {
+        dismissSplash();
+      }
+    }
+
+    splashSkipBtn.addEventListener('click', dismissSplash);
+    splashTimer = setInterval(updateSplashCountdown, 1000);
+
+    // ===== Banner Ad =====
+    const bannerAd = document.getElementById('banner-ad');
+    const bannerCloseBtn = document.getElementById('banner-ad-close');
+
+    bannerCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      bannerAd.classList.add('dismissed');
+    });
+
+    bannerAd.addEventListener('click', (e) => {
+      if (e.target === bannerCloseBtn || e.target.closest('.banner-ad-cta')) return;
+      showToast('正在跳转...', 'success');
+    });
+
+    // ===== Init =====
+    updateDisplay();
+  </script>
+</body>
+</html>
